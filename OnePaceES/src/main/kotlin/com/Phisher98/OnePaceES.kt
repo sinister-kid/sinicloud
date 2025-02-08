@@ -56,7 +56,7 @@ class OnePaceES : MainAPI() { // all providers must be an instance of MainAPI
             val episode=Ep.selectFirst("a")?.text()
             if (href.isNotEmpty())
             {
-                episodes.add(newEpisode(href))
+                episodes.add(newEpisode(url = href))
             }
         }
         return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
