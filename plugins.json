@@ -1,0 +1,23 @@
+[
+    {
+        "iconUrl": "https://raw.githubusercontent.com/sinister-kid/sinicloud/master/icons/onepacees-icon.png",
+        "jarFileSize": 126806,
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/sinister-kid/sinicloud",
+        "fileSize": 24022,
+        "status": 1,
+        "language": "es",
+        "authors": [
+            "KillerDogeEmpire,Phisher98,sinister-kid"
+        ],
+        "tvTypes": [
+            "Anime"
+        ],
+        "version": 1,
+        "internalName": "OnePaceES",
+        "jarUrl": "https://raw.githubusercontent.com/sinister-kid/sinicloud/builds/OnePaceES.jar",
+        "description": "One Pace ES",
+        "url": "https://raw.githubusercontent.com/sinister-kid/sinicloud/builds/OnePaceES.cs3",
+        "name": "OnePaceES"
+    }
+]

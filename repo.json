@@ -1,0 +1,8 @@
+{
+    "name": "sinicloud",
+    "description": "sinister-kid Repository",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/sinister-kid/sinicloud/refs/heads/builds/plugins.json"
+    ]
+  }
