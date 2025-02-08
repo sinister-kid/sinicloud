@@ -77,10 +77,11 @@ class OnePaceES : MainAPI() { // all providers must be an instance of MainAPI
     ): Boolean {
         val mId = Regex("xyz/(.*)").find(data)?.groupValues?.get(1)
         val document = app.get(
-            data, interceptor = WebViewResolver(Regex(".*\\.workers.dev/api/file/$mId"))
+            url = data, allowRedirects = true
         )
+        //interceptor = WebViewResolver(Regex(".*\\.workers.dev/api/file/$mId")
         val destUrl = document.url
-        val hjson = app.head(url = data).headers
+        //val hjson = app.head(url = data).headers
 
         loadExtractor(url = "${destUrl}?download", subtitleCallback, callback)
         return true
