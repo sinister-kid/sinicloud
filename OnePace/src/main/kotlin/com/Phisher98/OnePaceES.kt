@@ -17,14 +17,14 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
-class OnePace : MainAPI() { // all providers must be an instance of MainAPI
+class OnePaceES : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://rentry.org"
-    override var name = "One Pace"
+    override var name = "One Pace ES"
     override val hasMainPage = true
-    override var lang = "en"
+    override var lang = "es"
     override val hasDownloadSupport = true
     override val supportedTypes =setOf(TvType.Anime)
-    override val mainPage =mainPageOf("/onepace/" to "OnePace")
+    override val mainPage =mainPageOf("/onepaces/" to "OnePace")
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val link = "$mainUrl${request.data}"

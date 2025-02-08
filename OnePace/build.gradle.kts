@@ -2,10 +2,10 @@ version = 3
 
 
 cloudstream {
-    language = "en"
+    language = "es"
     // All of these properties are optional, you can safely remove them
 
-    description = "One Pace"
+    description = "One Pace ES"
     authors = listOf("KillerDogeEmpire,Phisher98")
 
     /**
