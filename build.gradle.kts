@@ -36,7 +36,7 @@ subprojects {
 
     cloudstream {
         setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/sinister-kid/sinicloud")
-        authors = listOf("Phisher98")
+        authors = listOf("sinister-kid")
     }
 
     android {
