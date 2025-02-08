@@ -83,7 +83,7 @@ class OnePaceES : MainAPI() { // all providers must be an instance of MainAPI
         val destUrl = document.url
         //val hjson = app.head(url = data).headers
 
-        loadExtractor(url = "${data}?download", subtitleCallback, callback)
+        loadExtractor(url = "${destUrl}?download", subtitleCallback, callback)
         return true
     }
 }
