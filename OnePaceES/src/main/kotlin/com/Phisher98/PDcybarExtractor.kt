@@ -1,5 +1,6 @@
 package com.Phisher98
 
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -13,12 +14,16 @@ open class PDcybarExtractor : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val mId = Regex("xyz/(.*)").find(url)?.groupValues?.get(1)
         if (mId.isNullOrEmpty()) {
+            val doc = app.get(
+                    url = url, allowRedirects = true
+            )
+            val newUrl = doc.url
             callback.invoke (
                 ExtractorLink (
                     this.name,
                     this.name,
-                    url,
-                    url,
+                    newUrl,
+                    newUrl,
                     Qualities.Unknown.value,
                     )
                 )
@@ -27,7 +32,7 @@ open class PDcybarExtractor : ExtractorApi() {
                 ExtractorLink(
                     this.name,
                     this.name,
-                    "$mainUrl/${mId}?download",
+                    "$url?download",
                     url,
                     Qualities.Unknown.value,
                 )
@@ -35,3 +40,15 @@ open class PDcybarExtractor : ExtractorApi() {
         }
     }
 }
+/*
+
+//val mId = Regex("xyz/(.*)").find(data)?.groupValues?.get(1)
+        val document = app.get(
+            url = data, allowRedirects = true
+        )
+        // interceptor = WebViewResolver(Regex(".*\\.workers.dev/api/file/$mId"))
+        val destUrl = document.url
+        //val hjson = app.head(url = data).headers
+
+
+ */
