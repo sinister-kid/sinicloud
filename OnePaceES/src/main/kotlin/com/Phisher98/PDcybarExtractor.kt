@@ -22,7 +22,7 @@ open class PDcybarExtractor : ExtractorApi() {
                 ExtractorLink (
                     this.name,
                     this.name,
-                    "$url?download",
+                    "$newUrl?download",
                     newUrl,
                     Qualities.Unknown.value,
                     )
