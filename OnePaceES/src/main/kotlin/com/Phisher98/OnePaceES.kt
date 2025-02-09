@@ -47,7 +47,7 @@ class OnePaceES : MainAPI() { // all providers must be an instance of MainAPI
     override suspend fun load(url: String): LoadResponse {
         val title = url.substringAfterLast("/")
         val document = app.get("https://rentry.org/onepaces").document
-        val poster = "https://images3.alphacoders.com/134/1342304.jpeg"
+        val poster = "http://cdn.vox-cdn.com/uploads/chorus_image/image/65232906/one_piece.0.png"
         val episodes = mutableListOf<Episode>()
         val elements= document.selectFirst("article div h3:contains($title)")
         val description= elements?.nextElementSibling()?.nextElementSibling()?.selectFirst("p")?.text()

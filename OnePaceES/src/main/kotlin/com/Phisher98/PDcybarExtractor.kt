@@ -14,10 +14,10 @@ open class PDcybarExtractor : ExtractorApi() {
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
         val mId = Regex("xyz/(.*)").find(url)?.groupValues?.get(1)
         if (mId.isNullOrEmpty()) {
-            val doc = app.get(
+            val newUrl = app.get(
                     url = url, allowRedirects = true
-            )
-            val newUrl = doc.url
+            ).url
+            //val newUrl = doc.url
             callback.invoke (
                 ExtractorLink (
                     this.name,
