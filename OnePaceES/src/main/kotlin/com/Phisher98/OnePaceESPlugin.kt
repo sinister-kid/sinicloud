@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 class OnePaceESPlugin : BasePlugin() {
     override fun load() {
         registerMainAPI(OnePaceES())
+        registerMainAPI(OnePaceTest())
         registerExtractorAPI(PDcybarExtractor())
     }
 }
