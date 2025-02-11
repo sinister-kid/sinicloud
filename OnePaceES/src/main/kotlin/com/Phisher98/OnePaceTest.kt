@@ -81,7 +81,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             )
 
     override suspend fun load(url: String): LoadResponse {
-        val pdApi = "https://pixeldrain.com/api"
+        val pdUrl = "https://pixeldrain.com"
         val title = url.substringAfterLast("/")
         val document = app.get("https://rentry.org/onepacestest").document
         val poster = document.selectFirst("img")?.attr("src") ?: "https://images3.alphacoders.com/134/1342304.jpeg"
@@ -89,11 +89,11 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         val elements= document.selectFirst("article div h3:contains($title)")
         val description = elements?.nextElementSibling()?.nextElementSibling()?.selectFirst("p")?.text()
         val albumId = elements?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.selectFirst("p")?.text()
-        val json = parseJson<MediaAlbum>(app.get("$pdApi/list/$albumId").text)
+        val json = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$albumId").text)
         json.files.mapNotNull { jEp ->
-            episodes.add(newEpisode("https://pd.cybar.xyz/${jEp.id}", {
+            episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
                 name = jEp.name
-                posterUrl = "$pdApi${jEp.thumbnail}"
+                posterUrl = "$pdUrl/api${jEp.thumbnail}"
             }))
         }
         return newAnimeLoadResponse(title, url, TvType.Anime) {
@@ -109,15 +109,15 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        loadExtractor(data, subtitleCallback, callback)
-        val mId = Regex("xyz/(.*)").find(data)?.groupValues?.get(1)
+        val mId = Regex("u/(.*)").find(data)?.groupValues?.get(1)
         if (mId.isNullOrEmpty()) {
-            return true
+            return false
         }
         else {
-            val otherUrl = "https://pixeldrain.com/u/$mId"
+            val otherUrl = "https://pd.cybar.xyz/$mId"
             loadExtractor(otherUrl, subtitleCallback, callback)
+            loadExtractor(data, subtitleCallback, callback)
+            return true
         }
-        return true
     }
 }
