@@ -83,6 +83,9 @@ class OnePaceES : MainAPI() { // all providers must be an instance of MainAPI
             callback: (ExtractorLink) -> Unit
     ): Boolean {
         loadExtractor(data, subtitleCallback, callback)
+        val mId = Regex("xyz/(.*)").find(data)?.groupValues?.get(1)
+        val otherUrl = "https://pixeldrain.com/u/$mId"
+        loadExtractor(otherUrl, subtitleCallback, callback)
         return true
     }
 }
