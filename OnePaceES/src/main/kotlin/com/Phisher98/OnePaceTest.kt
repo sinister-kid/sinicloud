@@ -28,25 +28,101 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://rentry.org"
+    override var mainUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/onepace.json"
     override var name = "One Pace Test"
     override val hasMainPage = true
     override var lang = "es"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Anime)
-    override val mainPage = mainPageOf("${mainUrl}/onepacestest/" to "OnePace")
+    override val mainPage = mainPageOf(mainUrl to "One Pace")
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data).document
-        val home = document.select("article div h3").mapNotNull { it.toSearchResult() }
+        val json = parseJson<OnePaceData>(app.get(request.data).text)
+        val home = json.arcs.mapIndexed { _, it -> it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
 
-    private fun Element.toSearchResult(): AnimeSearchResponse {
-        val title = this.text()
-        val posterUrl = this.nextElementSibling()?.select("p span img")?.attr("src") ?:""
-        return newAnimeSearchResponse(title, url=title, TvType.Anime) { this.posterUrl = posterUrl }
+    private fun OnePaceArc.toSearchResult(): AnimeSearchResponse {
+        val title = "Arco ${this.number} - ${this.name}"
+        val posterUrl = this.cover
+        return newAnimeSearchResponse(title, this.toJson(), TvType.Anime) { this.posterUrl = posterUrl; }
     }
+
+    override suspend fun load(url: String): LoadResponse {
+        val jArc = parseJson<OnePaceArc>(url)
+        val poster = jArc.cover
+        val description = jArc.description
+        val apiId = jArc.apiId
+        val episodes = mutableListOf<Episode>()
+        val pdUrl = "https://pixeldrain.com"
+        val json = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$apiId").text)
+        json.files.map { jEp ->
+            episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
+                name = jEp.name
+                posterUrl = "$pdUrl/api${jEp.thumbnail}"
+            }))
+        }
+        return newAnimeLoadResponse(jArc.name, url, TvType.Anime) {
+            addEpisodes(DubStatus.Subbed, episodes)
+            posterUrl = poster
+            plot = description
+        }
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val mId = Regex("u/(.*)").find(data)?.groupValues?.get(1)
+        if (mId.isNullOrEmpty()) {
+            return false
+        }
+        else {
+            val otherUrl = "https://pd.cybar.xyz/$mId"
+            loadExtractor(otherUrl, subtitleCallback, callback)
+            loadExtractor(data, subtitleCallback, callback)
+            return true
+        }
+    }
+
+    data class OnePaceData(
+        @JsonProperty("name") val name: String,
+        @JsonProperty("description") val description: String,
+        @JsonProperty("cover") val cover: String,
+        @JsonProperty("arcs") val arcs: Array<OnePaceArc>
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as OnePaceData
+
+            if (name != other.name) return false
+            if (description != other.description) return false
+            if (cover != other.cover) return false
+            if (!arcs.contentEquals(other.arcs)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = name.hashCode()
+            result = 31 * result + description.hashCode()
+            result = 31 * result + cover.hashCode()
+            result = 31 * result + arcs.contentHashCode()
+            return result
+        }
+    }
+
+    data class OnePaceArc(
+        @JsonProperty("number") val number: String,
+        @JsonProperty("name") val name: String,
+        @JsonProperty("description") val description: String,
+        @JsonProperty("cover") val cover: String,
+        @JsonProperty("apiId") val apiId: String,
+    )
 
     data class MediaAlbum(
         @JsonProperty("id") val id: String,
@@ -78,46 +154,5 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         @JsonProperty("id") val id: String,
         @JsonProperty("name") val name: String,
         @JsonProperty("thumbnail_href") val thumbnail: String
-            )
-
-    override suspend fun load(url: String): LoadResponse {
-        val pdUrl = "https://pixeldrain.com"
-        val title = url.substringAfterLast("/")
-        val document = app.get("https://rentry.org/onepacestest").document
-        val poster = document.selectFirst("img")?.attr("src") ?: "https://images3.alphacoders.com/134/1342304.jpeg"
-        val episodes = mutableListOf<Episode>()
-        val elements= document.selectFirst("article div h3:contains($title)")
-        val description = elements?.nextElementSibling()?.nextElementSibling()?.selectFirst("p")?.text()
-        val albumId = elements?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.nextElementSibling()?.selectFirst("p")?.text()
-        val json = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$albumId").text)
-        json.files.mapNotNull { jEp ->
-            episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
-                name = jEp.name
-                posterUrl = "$pdUrl/api${jEp.thumbnail}"
-            }))
-        }
-        return newAnimeLoadResponse(title, url, TvType.Anime) {
-            addEpisodes(DubStatus.Subbed, episodes)
-            posterUrl = poster
-            plot = description
-        }
-    }
-
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val mId = Regex("u/(.*)").find(data)?.groupValues?.get(1)
-        if (mId.isNullOrEmpty()) {
-            return false
-        }
-        else {
-            val otherUrl = "https://pd.cybar.xyz/$mId"
-            loadExtractor(otherUrl, subtitleCallback, callback)
-            loadExtractor(data, subtitleCallback, callback)
-            return true
-        }
-    }
+    )
 }
