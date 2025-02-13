@@ -4,15 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
+import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.ProviderType
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.network.WebViewResolver
@@ -37,7 +40,8 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     override val mainPage = mainPageOf(mainUrl to "One Pace")
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val json = parseJson<OnePaceData>(app.get(request.data).text)
+        mainUrl = app.get(request.data).text
+        val json = parseJson<OnePaceData>(mainUrl)
         val home = json.arcs.mapIndexed { _, it -> it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -50,14 +54,14 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun load(url: String): LoadResponse {
         val jArc = parseJson<OnePaceArc>(url)
-        val poster = jArc.cover
+        val poster = parseJson<OnePaceData>(mainUrl).cover
         val description = jArc.description
         val apiId = jArc.apiId
         val episodes = mutableListOf<Episode>()
         val pdUrl = "https://pixeldrain.com"
-        val json = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$apiId").text)
-        json.files.map { jEp ->
-            episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
+        val jData = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$apiId").text)
+        jData.files.map { jEp ->
+                episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
                 name = jEp.name
                 posterUrl = "$pdUrl/api${jEp.thumbnail}"
             }))
