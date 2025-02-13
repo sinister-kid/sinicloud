@@ -40,8 +40,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     override val mainPage = mainPageOf(mainUrl to "One Pace")
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        mainUrl = app.get(request.data).text
-        val json = parseJson<OnePaceData>(mainUrl)
+        val json = parseJson<OnePaceData>(app.get(request.data).text)
         val home = json.arcs.mapIndexed { _, it -> it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
@@ -54,7 +53,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun load(url: String): LoadResponse {
         val jArc = parseJson<OnePaceArc>(url)
-        val poster = parseJson<OnePaceData>(mainUrl).cover
+        val poster = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/onepace-poster-1.png"
         val description = jArc.description
         val apiId = jArc.apiId
         val episodes = mutableListOf<Episode>()
