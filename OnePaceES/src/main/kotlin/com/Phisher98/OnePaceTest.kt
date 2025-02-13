@@ -64,11 +64,11 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
                 val pdUrl = "https://pixeldrain.com"
                 val pdAlbum = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${jArc.apiId}").text)
                 pdAlbum.files.map { mFile ->
-                    episodes.add(newEpisode("$pdUrl/u/${mFile.id}") {
+                    episodes.add(newEpisode("$pdUrl/u/${mFile.id}", {
                         this.season = jArc.number
                         this.name = mFile.name
                         this.posterUrl = mFile.thumbnail
-                    })
+                    }))
                 }
             }
 
