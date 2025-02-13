@@ -50,9 +50,9 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     private fun OnePaceArc.toSearchResult(): AnimeSearchResponse {
-        val title = "Arco ${this.number} - ${this.name}"
-        val posterUrl = this.cover
-        return newAnimeSearchResponse(title, this.toJson(), TvType.Anime) { this.posterUrl = posterUrl }
+        return newAnimeSearchResponse("Arco $number - $name", this.toJson(), TvType.Anime) {
+            this.posterUrl = cover
+        }
     }
 
     private fun ArcWrapper.toSearchResult(): AnimeSearchResponse {
@@ -82,7 +82,8 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             posterUrl = poster
             plot = description
             backgroundPosterUrl = posterBg
-            addSeasonNames(seasonNames)
+            val d = SeasonData(jArc.arc.number.toInt(), jArc.arc.name, jArc.arc.number.toInt())
+            addSeasonNames(listOf(d))
         }
     }
 
