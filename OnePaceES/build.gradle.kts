@@ -19,7 +19,7 @@ cloudstream {
     tvTypes = listOf(
         "Anime"
     )
-    iconUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud/master/icons/onepace-icon.png"
+    iconUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud/master/icons/onepacees-icon.png"
 
     isCrossPlatform = true
 }
