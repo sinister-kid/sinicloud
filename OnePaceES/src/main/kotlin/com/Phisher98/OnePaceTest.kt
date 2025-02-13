@@ -39,23 +39,33 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     override val supportedTypes = setOf(TvType.Anime)
     override val mainPage = mainPageOf(mainUrl to "One Pace")
 
+
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val json = parseJson<OnePaceData>(app.get(request.data).text)
-        val home = json.arcs.mapIndexed { _, it -> it.toSearchResult() }
+        val home = json.arcs.mapIndexed { _, it ->
+            ArcWrapper(json.cover, json.coverbg, it).toSearchResult()
+        }
         return newHomePageResponse(request.name, home)
     }
 
     private fun OnePaceArc.toSearchResult(): AnimeSearchResponse {
         val title = "Arco ${this.number} - ${this.name}"
         val posterUrl = this.cover
-        return newAnimeSearchResponse(title, this.toJson(), TvType.Anime) { this.posterUrl = posterUrl; }
+        return newAnimeSearchResponse(title, this.toJson(), TvType.Anime) { this.posterUrl = posterUrl }
+    }
+
+    private fun ArcWrapper.toSearchResult(): AnimeSearchResponse {
+        val title = "Arco ${this.arc.number} - ${this.arc.name}"
+        val posterUrl = this.cover
+        return newAnimeSearchResponse(title, this.toJson(), TvType.Anime) { this.posterUrl = posterUrl }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val jArc = parseJson<OnePaceArc>(url)
-        val poster = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/onepace-poster-1.png"
-        val description = jArc.description
-        val apiId = jArc.apiId
+        val jArc = parseJson<ArcWrapper>(url)
+        val poster = jArc.cover
+        val posterBg = jArc.coverbg
+        val description = jArc.arc.description
+        val apiId = jArc.arc.apiId
         val episodes = mutableListOf<Episode>()
         val pdUrl = "https://pixeldrain.com"
         val jData = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$apiId").text)
@@ -65,10 +75,11 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
                 posterUrl = "$pdUrl/api${jEp.thumbnail}"
             }))
         }
-        return newAnimeLoadResponse(jArc.name, url, TvType.Anime) {
+        return newAnimeLoadResponse("Arco ${jArc.arc.number} - ${jArc.arc.name}", url, TvType.Anime) {
             addEpisodes(DubStatus.Subbed, episodes)
             posterUrl = poster
             plot = description
+            backgroundPosterUrl = posterBg
         }
     }
 
@@ -90,10 +101,17 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         }
     }
 
+    data class ArcWrapper(
+        val cover: String,
+        val coverbg: String,
+        val arc: OnePaceArc
+    )
+
     data class OnePaceData(
         @JsonProperty("name") val name: String,
         @JsonProperty("description") val description: String,
         @JsonProperty("cover") val cover: String,
+        @JsonProperty("coverbg") val coverbg: String,
         @JsonProperty("arcs") val arcs: Array<OnePaceArc>
     ) {
         override fun equals(other: Any?): Boolean {
