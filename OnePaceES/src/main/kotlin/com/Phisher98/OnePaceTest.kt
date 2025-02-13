@@ -1,37 +1,29 @@
 package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonValue
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
-import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.addkitsuId
 import com.lagradost.cloudstream3.MainAPI
-import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
-import com.lagradost.cloudstream3.ProviderType
 import com.lagradost.cloudstream3.SeasonData
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addEpisodes
 import com.lagradost.cloudstream3.addSeasonNames
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.extractors.StreamSB
-import com.lagradost.cloudstream3.fixUrl
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
-import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.nodes.Element
 
 class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/onepace.json"
@@ -45,8 +37,8 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val json = parseJson<OnePaceData>(app.get(request.data).text)
-        val home = json.arcs.mapIndexed { _, it -> ArcWrapper(json.cover, json.coverbg, it).toSearchResult() }
-        return newHomePageResponse(request.name, home)
+        val mainAnimeview = listOf(json.toSearchResult())
+        return newHomePageResponse(request.name, mainAnimeview)
     }
 
     private fun OnePaceArc.toSearchResult(): AnimeSearchResponse {
@@ -55,35 +47,31 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         }
     }
 
-    private fun ArcWrapper.toSearchResult(): AnimeSearchResponse {
-        return newAnimeSearchResponse("Arco ${arc.number} - ${arc.name}", this.toJson(), TvType.Anime) {
-            this.posterUrl = arc.cover
+    private fun OnePaceData.toSearchResult(): AnimeSearchResponse {
+        return newAnimeSearchResponse(name, this.toJson(), TvType.Anime) {
+            this.posterUrl = cover
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val jArc = parseJson<ArcWrapper>(url)
-        val poster = jArc.cover
-        val posterBg = jArc.coverbg
-        val description = jArc.arc.description
-        val apiId = jArc.arc.apiId
+        val jPace = parseJson<OnePaceData>(url)
+        val arcs = jPace.arcs
+        val seasons = mutableListOf<SeasonData>()
         val episodes = mutableListOf<Episode>()
-        val pdUrl = "https://pixeldrain.com"
-        val jData = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$apiId").text)
-        val seasonNames = listOf("Arco ${jArc.arc.number} - ${jArc.arc.name}")
-        jData.files.map { jEp ->
-                episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
-                    name = jEp.name
-                    posterUrl = "$pdUrl/api${jEp.thumbnail}"
-            }))
+
+        arcs.map { jArc ->
+            seasons.add(SeasonData(jArc.number, jArc.name, jArc.number))
+            val pdUrl = "https://pixeldrain.com"
+            val pdAlbum = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${jArc.apiId}").text)
+            pdAlbum.files.map { mFile -> episodes.add(newEpisode(mFile) { this.season = jArc.number; this.name = mFile.name }) }
         }
-        return newAnimeLoadResponse(seasonNames.first(), url, TvType.Anime) {
+
+        return newAnimeLoadResponse(jPace.name, url, TvType.Anime) {
             addEpisodes(DubStatus.Subbed, episodes)
-            posterUrl = poster
-            plot = description
-            backgroundPosterUrl = posterBg
-            val d = SeasonData(jArc.arc.number.toInt(), jArc.arc.name, jArc.arc.number.toInt())
-            addSeasonNames(listOf(d))
+            addSeasonNames(seasons)
+            posterUrl = jPace.cover
+            plot = jPace.description
+            backgroundPosterUrl = jPace.coverbg
         }
     }
 
@@ -93,23 +81,16 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val mId = Regex("u/(.*)").find(data)?.groupValues?.get(1)
-        if (mId.isNullOrEmpty()) {
+        val apiId = parseJson<MediaFile>(data).id
+        if (apiId.isEmpty()) {
             return false
         }
         else {
-            val otherUrl = "https://pd.cybar.xyz/$mId"
-            loadExtractor(otherUrl, subtitleCallback, callback)
-            loadExtractor(data, subtitleCallback, callback)
+            loadExtractor("https://pd.cybar.xyz/$apiId", subtitleCallback, callback)
+            loadExtractor("https://pixeldrain.com/u/$apiId", subtitleCallback, callback)
             return true
         }
     }
-
-    data class ArcWrapper(
-        val cover: String,
-        val coverbg: String,
-        val arc: OnePaceArc
-    )
 
     data class OnePaceData(
         @JsonProperty("name") val name: String,
@@ -142,7 +123,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     data class OnePaceArc(
-        @JsonProperty("number") val number: String,
+        @JsonProperty("number") val number: Int,
         @JsonProperty("name") val name: String,
         @JsonProperty("description") val description: String,
         @JsonProperty("cover") val cover: String,

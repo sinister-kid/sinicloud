@@ -1,4 +1,4 @@
-version = 3
+version = 1
 
 
 cloudstream {
@@ -6,7 +6,7 @@ cloudstream {
     // All of these properties are optional, you can safely remove them
 
     description = "One Pace ES"
-    authors = listOf("KillerDogeEmpire,Phisher98")
+    authors = listOf("KillerDogeEmpire,Phisher98,sinister-kid")
 
     /**
      * Status int as the following:
@@ -19,7 +19,7 @@ cloudstream {
     tvTypes = listOf(
         "Anime"
     )
-    iconUrl = "https://raw.githubusercontent.com/Rowdy-Avocado/Rowdycado-Extensions/master/logos/onepace.png"
+    iconUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud/master/icons/onepace-icon.png"
 
     isCrossPlatform = true
 }
