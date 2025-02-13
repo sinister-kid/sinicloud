@@ -60,10 +60,19 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         val episodes = mutableListOf<Episode>()
 
         arcs.map { jArc ->
-            seasons.add(SeasonData(jArc.number, jArc.name, jArc.number))
-            val pdUrl = "https://pixeldrain.com"
-            val pdAlbum = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${jArc.apiId}").text)
-            pdAlbum.files.map { mFile -> episodes.add(newEpisode(mFile.id) { this.season = jArc.number; this.name = mFile.name; this.posterUrl = mFile.thumbnail }) }
+            if (jArc.apiId.isNotEmpty()) {
+                seasons.add(SeasonData(jArc.number, jArc.name, jArc.number))
+                val pdUrl = "https://pixeldrain.com"
+                val pdAlbum = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${jArc.apiId}").text)
+                pdAlbum.files.map { mFile ->
+                    episodes.add(newEpisode(mFile.id) {
+                        this.season = jArc.number
+                        this.name = mFile.name
+                        this.posterUrl = mFile.thumbnail
+                    })
+                }
+            }
+
         }
 
         return newAnimeLoadResponse(jPace.name, url, TvType.Anime) {
