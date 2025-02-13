@@ -64,7 +64,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
                 val pdUrl = "https://pixeldrain.com"
                 val pdAlbum = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${jArc.apiId}").text)
                 pdAlbum.files.map { mFile ->
-                    episodes.add(newEpisode(mFile.id) {
+                    episodes.add(newEpisode("$pdUrl/u/${mFile.id}") {
                         this.season = jArc.number
                         this.name = mFile.name
                         this.posterUrl = mFile.thumbnail
@@ -89,12 +89,13 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val mId = Regex("/u/(.*)").find(data)?.groupValues?.get(1)
         //if (apiId.isEmpty()) {
         //    return false
         //}
         //else {
-            loadExtractor("https://pd.cybar.xyz/$data", subtitleCallback, callback)
-            loadExtractor("https://pixeldrain.com/u/$data", subtitleCallback, callback)
+            loadExtractor("https://pd.cybar.xyz/$mId", subtitleCallback, callback)
+            loadExtractor(data, subtitleCallback, callback)
             return true
         //}
     }
