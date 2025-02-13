@@ -1,7 +1,6 @@
 package com.Phisher98
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonValue
 import com.lagradost.cloudstream3.AnimeSearchResponse
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.Episode
@@ -90,13 +89,12 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val apiId = data
         //if (apiId.isEmpty()) {
         //    return false
         //}
         //else {
-            loadExtractor("https://pd.cybar.xyz/$apiId", subtitleCallback, callback)
-            loadExtractor("https://pixeldrain.com/u/$apiId", subtitleCallback, callback)
+            loadExtractor("https://pd.cybar.xyz/$data", subtitleCallback, callback)
+            loadExtractor("https://pixeldrain.com/u/$data", subtitleCallback, callback)
             return true
         //}
     }
