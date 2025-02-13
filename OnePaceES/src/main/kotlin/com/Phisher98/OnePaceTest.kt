@@ -7,13 +7,16 @@ import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
+import com.lagradost.cloudstream3.LoadResponse.Companion.addkitsuId
 import com.lagradost.cloudstream3.MainAPI
 import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.ProviderType
+import com.lagradost.cloudstream3.SeasonData
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.addEpisodes
+import com.lagradost.cloudstream3.addSeasonNames
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.StreamSB
 import com.lagradost.cloudstream3.fixUrl
@@ -42,9 +45,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val json = parseJson<OnePaceData>(app.get(request.data).text)
-        val home = json.arcs.mapIndexed { _, it ->
-            ArcWrapper(json.cover, json.coverbg, it).toSearchResult()
-        }
+        val home = json.arcs.mapIndexed { _, it -> ArcWrapper(json.cover, json.coverbg, it).toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
 
@@ -55,9 +56,9 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     }
 
     private fun ArcWrapper.toSearchResult(): AnimeSearchResponse {
-        val title = "Arco ${this.arc.number} - ${this.arc.name}"
-        val posterUrl = this.cover
-        return newAnimeSearchResponse(title, this.toJson(), TvType.Anime) { this.posterUrl = posterUrl }
+        return newAnimeSearchResponse("Arco ${arc.number} - ${arc.name}", this.toJson(), TvType.Anime) {
+            this.posterUrl = arc.cover
+        }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -69,17 +70,19 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         val episodes = mutableListOf<Episode>()
         val pdUrl = "https://pixeldrain.com"
         val jData = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/$apiId").text)
+        val seasonNames = listOf("Arco ${jArc.arc.number} - ${jArc.arc.name}")
         jData.files.map { jEp ->
                 episodes.add(newEpisode("$pdUrl/u/${jEp.id}", {
-                name = jEp.name
-                posterUrl = "$pdUrl/api${jEp.thumbnail}"
+                    name = jEp.name
+                    posterUrl = "$pdUrl/api${jEp.thumbnail}"
             }))
         }
-        return newAnimeLoadResponse("Arco ${jArc.arc.number} - ${jArc.arc.name}", url, TvType.Anime) {
+        return newAnimeLoadResponse(seasonNames.first(), url, TvType.Anime) {
             addEpisodes(DubStatus.Subbed, episodes)
             posterUrl = poster
             plot = description
             backgroundPosterUrl = posterBg
+            addSeasonNames(seasonNames)
         }
     }
 
