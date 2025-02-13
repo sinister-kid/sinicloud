@@ -63,7 +63,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             seasons.add(SeasonData(jArc.number, jArc.name, jArc.number))
             val pdUrl = "https://pixeldrain.com"
             val pdAlbum = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${jArc.apiId}").text)
-            pdAlbum.files.map { mFile -> episodes.add(newEpisode(mFile) { this.season = jArc.number; this.name = mFile.name }) }
+            pdAlbum.files.map { mFile -> episodes.add(newEpisode(mFile.id) { this.season = jArc.number; this.name = mFile.name; this.posterUrl = mFile.thumbnail }) }
         }
 
         return newAnimeLoadResponse(jPace.name, url, TvType.Anime) {
@@ -81,15 +81,15 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val apiId = parseJson<MediaFile>(data).id
-        if (apiId.isEmpty()) {
-            return false
-        }
-        else {
+        val apiId = data
+        //if (apiId.isEmpty()) {
+        //    return false
+        //}
+        //else {
             loadExtractor("https://pd.cybar.xyz/$apiId", subtitleCallback, callback)
             loadExtractor("https://pixeldrain.com/u/$apiId", subtitleCallback, callback)
             return true
-        }
+        //}
     }
 
     data class OnePaceData(
