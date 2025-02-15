@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.newAnimeLoadResponse
 import com.lagradost.cloudstream3.newAnimeSearchResponse
 import com.lagradost.cloudstream3.newEpisode
@@ -34,11 +35,12 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
-        val jText = document.select("script:containsOwn(romance-dawn)").text()
-        val jString = jText.replace("\\\"", "\"")
-                            .replaceBefore("\"data\":", "")
-                            .replaceAfterLast("}]\\n\"]", "")
-        val jArcs = parseJson<JsonData>(jString).arcs
+        val scriptElements = document.select("body > script")
+        val scriptText = scriptElements.find ({ it.data().contains("romance-dawn")})?.data()
+        val jString = scriptText?.replace("\\\"", "\"")
+                            ?.replaceBefore("\"data\":", "")
+                            ?.replaceAfterLast("}]\\n\"]", "")
+        val jArcs = parseJson<JsonData>(jString?: "").arcs
         val mainAnimeView = jArcs.map { it.toSearchResult() }
         return newHomePageResponse(request.name, mainAnimeView)
     }
