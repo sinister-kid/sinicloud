@@ -42,8 +42,8 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             val data = scriptElements.find({ it.data().contains("romance-dawn") })?.data()
             val scriptText = if (data != null) data else " elements"
             val jString = scriptText.replace("\\\"", "\"")
-                .replaceBefore("\"data\":", " ")
-                .replaceAfterLast("}]\\n\"]", " ")
+                .replaceBefore("\"data\":", "")
+                .replaceAfterLast("}]\\n\"]", "").toJson()
             val jArcs = parseJson<JsonData>(jString).arcs
             val mainAnimeView = jArcs.map { it.toSearchResult() }
             return newHomePageResponse(request.name, mainAnimeView)
