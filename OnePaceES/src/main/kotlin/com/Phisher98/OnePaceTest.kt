@@ -44,7 +44,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             val jString = scriptText.replace("\\\"", "\"")
                 .replaceBefore("\"data\":", " ")
                 .replaceAfterLast("}]\\n\"]", " ")
-            val jArcs = parseJson<JsonData>(scriptText).arcs
+            val jArcs = parseJson<JsonData>(jString).arcs
             val mainAnimeView = jArcs.map { it.toSearchResult() }
             return newHomePageResponse(request.name, mainAnimeView)
         } else {
