@@ -35,7 +35,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get(request.data, cacheTime = ).document
+        val document = app.get(request.data, allowRedirects = true).document
         val scriptElements = document.select("body > script")
         val nodeElements = document.dataNodes()
         if (scriptElements.isNullOrEmpty()) {
