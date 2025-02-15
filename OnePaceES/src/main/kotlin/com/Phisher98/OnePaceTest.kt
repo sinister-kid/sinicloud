@@ -39,7 +39,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         val scriptElements = document.select("body > script")
         val nodeElements = document.dataNodes()
         if (!scriptElements.isNullOrEmpty()) {
-            val data = scriptElements.find({ it.data().contains("romance-dawn") })?.data()
+            val data = scriptElements.find({ it.data().contains("romance-dawn") })?.dataNodes()?.first()?.wholeData
             val scriptText = if (data != null) data else " elements"
             val jString = scriptText.replace("\\\"", "\"")
                 .replaceBefore("\"data\":", "")
