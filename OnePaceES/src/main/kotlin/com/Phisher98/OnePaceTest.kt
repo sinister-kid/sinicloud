@@ -36,27 +36,17 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
-        val scriptElements = document.select("body > script")
         val nodeElements = document.dataNodes()
-        if (!scriptElements.isNullOrEmpty()) {
-            val data = scriptElements.find({ it.data().contains("romance-dawn") })?.dataNodes()?.first()?.wholeData
-            val scriptText = if (data != null) data else " elements"
-            val jString = scriptText.replace("\\\"", "\"")
-                .replaceBefore("\"data\":", "")
-                .replaceAfterLast("}]\\n\"]", "").toJson()
-            val jArcs = parseJson<JsonData>(jString).arcs
-            val mainAnimeView = jArcs.map { it.toSearchResult() }
-            return newHomePageResponse(request.name, mainAnimeView)
-        } else {
-            val scriptText = nodeElements.find({ node -> node.wholeData.contains("romance-dawn") })?.wholeData ?: " nodes"
-            val jString = scriptText.replace("\\\"", "\"").replaceBefore("\"data\":", "")
-                .replaceAfterLast("}]\\n\"]", "")
-            val jArcs = parseJson<JsonData>(jString).arcs
+            val scriptText = nodeElements.find { node -> node.wholeData.contains("romance-dawn") }?.wholeData ?: " nodes"
+            //val jString = scriptText.replace("\\\"", "\"").replaceBefore("\"data\":", "")
+            //    .replaceAfterLast("}]\\n\"]", "")
+        val jString = scriptText.replaceBefore("[1", "").replaceAfterLast("]", "")
+        val jArcs = parseJson<JsonData>(jString).arcs
             val mainAnimeView = jArcs.map { it.toSearchResult() }
             return newHomePageResponse(request.name, mainAnimeView)
         }
 
-    }
+    
 
     private fun JsonArc.toSearchResult(): AnimeSearchResponse {
         return newAnimeSearchResponse(title, this.toJson() , TvType.Anime) {
