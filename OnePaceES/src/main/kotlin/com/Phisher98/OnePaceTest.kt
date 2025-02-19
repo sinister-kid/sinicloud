@@ -35,26 +35,21 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
         val scriptElements = document.select("body > script")
-        val nodeElements = document.dataNodes()
-        if (!scriptElements.isNullOrEmpty()) {
-            val scriptText =
-                scriptElements.find({ it.data().contains("romance-dawn") })?.dataNodes()
-                    ?.first()?.wholeData ?: " elements"
-            val jString = scriptText.replace("\\\"", "\"")
-                .replaceBefore("{\"data\":", "")
-                .replaceAfterLast("]\\n\"]", "").toJson()
+        val scriptText = scriptElements.find { it.data().contains("romance-dawn") }?.dataNodes()
+                                        ?.first()?.wholeData ?: EmptyJsonData().toString()
+        val jString = scriptText.replace("\\\"", "\"")
+                                .replaceBefore("{\"data\":", "")
+                                .replaceAfterLast("]\\n\"]", "").toJson()
             val jArcs = parseJson<JsonData>(jString).arcs
             val mainAnimeView = jArcs.map { it.toSearchResult() }
             return newHomePageResponse(request.name, mainAnimeView)
-        } else {
-            val scriptText = nodeElements.find({ node -> node.wholeData.contains("romance-dawn") })?.wholeData ?: " nodes"
-            val jString = scriptText.replace("\\\"", "\"").replaceBefore("\"data\":", "")
-                .replaceAfterLast("}]\\n\"]", "")
-            val jArcs = parseJson<JsonData>(jString).arcs
-            val mainAnimeView = jArcs.map { it.toSearchResult() }
-            return newHomePageResponse(request.name, mainAnimeView)
-        }
 
+
+    }
+
+    private fun EmptyJsonData(): JsonData {
+        val emptyJsonArc = JsonArc("empty", false, "empty", "empty", emptyArray<JsonArcAlbum>())
+        return JsonData(arrayOf(emptyJsonArc))
     }
 
     private fun JsonArc.toSearchResult(): AnimeSearchResponse {
@@ -81,7 +76,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
                 name = jEp.name
                 posterUrl = "$pdUrl/api${jEp.thumbnail}"
             })) }
-        episodes.set(DubStatus.Subbed, subEps)
+        episodes[DubStatus.Subbed] = subEps
 //        jArc.album.forEach { arcAlbum ->
 //            val albumpair = arcAlbum.qualities.map { album ->
 //                Pair(IntToQuality(album.resolution), parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${album.id}").text).files)
@@ -106,9 +101,9 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
 
         return newAnimeLoadResponse(jArc.title , jArc.toJson(), TvType.Anime) {
             this.episodes = episodes
-            posterUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/posteronepace-poster-1.png"
+            posterUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/onepace-poster-1.png"
             plot = jArc.description
-            backgroundPosterUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/posteronepace-poster-bg.png"
+            backgroundPosterUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/onepace-poster-bg.png"
 
 
         }
@@ -134,7 +129,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         //}
     }
 
-    private suspend fun IntToQuality(resolution: Int): Int {
+    private fun IntToQuality(resolution: Int): Int {
         return when (resolution) {
             480 -> Qualities.P480.value
             720 -> Qualities.P720.value
