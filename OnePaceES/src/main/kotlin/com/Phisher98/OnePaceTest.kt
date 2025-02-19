@@ -38,9 +38,8 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         val document = app.get(request.data).document
         val nodeElements = document.dataNodes()
             val scriptText = nodeElements.find { node -> node.wholeData.contains("romance-dawn") }?.wholeData ?: " nodes"
-            //val jString = scriptText.replace("\\\"", "\"").replaceBefore("\"data\":", "")
-            //    .replaceAfterLast("}]\\n\"]", "")
-        val jString = scriptText.replaceBefore("[1", "").replaceAfterLast("]", "")
+            val jString = scriptText.replace("\\\"", "\"").replaceBefore("{\"data\":", "")
+                .replaceAfterLast("]\\n\"]", "")
         val jArcs = parseJson<JsonData>(jString).arcs
             val mainAnimeView = jArcs.map { it.toSearchResult() }
             return newHomePageResponse(request.name, mainAnimeView)
