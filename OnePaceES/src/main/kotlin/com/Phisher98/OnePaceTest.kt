@@ -46,7 +46,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             return newHomePageResponse(request.name, mainAnimeView)
         }
 
-    
+
 
     private fun JsonArc.toSearchResult(): AnimeSearchResponse {
         return newAnimeSearchResponse(title, this.toJson() , TvType.Anime) {
