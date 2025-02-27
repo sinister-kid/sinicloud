@@ -29,54 +29,64 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     override var lang = "es"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Anime)
-    override val mainPage = mainPageOf("$mainUrl/es/watch" to "One Pace")
+    override val mainPage = mainPageOf("$mainUrl/$lang/watch" to "One Pace")
 
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get(request.data).document
         val scriptElements = document.select("body > script")
-        val scriptText = scriptElements.find { it.data().contains("romance-dawn") }?.dataNodes()
-                                        ?.first()?.wholeData ?: EmptyJsonData().toString()
+        val scriptText = scriptElements.find { it.data().contains("romance-dawn") }
+                        ?.dataNodes()?.first()?.wholeData ?: emptyJsonData().toString()
         val jString = scriptText.replace("\\\"", "\"")
                                 .replaceBefore("{\"data\":", "")
-                                .replaceAfterLast("]\\n\"]", "").toJson()
-            val jArcs = parseJson<JsonData>(jString).arcs
-            val mainAnimeView = jArcs.map { it.toSearchResult() }
-            return newHomePageResponse(request.name, mainAnimeView)
-
-
+                                .replaceAfterLast("}]}", "").toJson()
+        val jArcs = parseJson<JsonData>(jString).arcs
+        val mainAnimeView = jArcs.map { it.toSearchResult() }
+        return newHomePageResponse(request.name, mainAnimeView)
     }
 
-    private fun EmptyJsonData(): JsonData {
-        val emptyJsonArc = JsonArc("empty", false, "empty", "empty", emptyArray<JsonArcAlbum>())
-        return JsonData(arrayOf(emptyJsonArc))
+    private fun emptyJsonData(): JsonData {
+        val emptyDataArc = DataArc("empty", false, "empty", "empty", emptyArray<DataArcVariant>())
+        return JsonData(arrayOf(emptyDataArc))
     }
 
-    private fun JsonArc.toSearchResult(): AnimeSearchResponse {
+    private fun DataArc.toSearchResult(): AnimeSearchResponse {
         return newAnimeSearchResponse(title, this.toJson() , TvType.Anime) {
             posterUrl = "https://raw.githubusercontent.com/sinister-kid/sinicloud-data/refs/heads/main/onepace/covers/$slug.png"
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val jArc = parseJson<JsonArc>(url)
+        val jArc = parseJson<DataArc>(url)
         //val seasons = mutableListOf<SeasonData>()
         val episodes = mutableMapOf<DubStatus, List<Episode>>()
         val subEps = mutableListOf<Episode>()
         val dubEps = mutableListOf<Episode>()
         val pdUrl = "https://pixeldrain.com"
-        val jAlbum = jArc.album.firstOrNull { it.sub == "es"}
-        if (!jArc.album.isEmpty()) {
-            //val jAlbum = jArc.album.firstOrNull { it.sub == "es"}
+        if (jArc.variant?.isNotEmpty()!!) {
+            val jArcExtended = jArc.variant.firstOrNull { (it.sub == lang) && (it.dub == "ja") && (it.variant == "extended")}
+            val jArcVar = jArcExtended ?: jArc.variant.firstOrNull { (it.sub == lang) && (it.dub == "ja") }
+            val mIdEpisodes = mutableListOf<Array<MediaFile>>()
+            val mIdQualities = mutableListOf<Int>()
+            jArcVar?.qualities?.forEach { pdAlbum ->
+                val mediaFiles = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${pdAlbum.id}").text).files
+                mIdEpisodes.add(mediaFiles)
+                mIdQualities.add(pdAlbum.resolution)
+            }
+            val episodesData = mutableListOf<EpisodeData>()
+            mIdEpisodes.forEachIndexed{ qIndex, arr ->
+                arr.forEachIndexed { eIndex, eMedia ->
+                    if (qIndex == 1) {
+                        val episodesPair = mutableListOf<Pair<Int, String>>()
+                        episodesData.add(EpisodeData(pdUrl, eIndex.toString(), episodesPair))
+                    }
+                    episodesData[eIndex-1].resid.add(Pair(mIdQualities[qIndex-1], eMedia.id))
+                }
+            }
+            episodesData.forEach { dEp -> subEps.add(newEpisode(dEp.toJson())) }
+            episodes[DubStatus.Subbed] = subEps
         }
-        val albumid = jAlbum?.qualities?.last()
-        val media = parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${albumid?.id}").text).files
-        media.map { jEp ->
-            subEps.add(newEpisode("$pdUrl/u/${jEp.id}", {
-                name = jEp.name
-                posterUrl = "$pdUrl/api${jEp.thumbnail}"
-            })) }
-        episodes[DubStatus.Subbed] = subEps
+
 //        jArc.album.forEach { arcAlbum ->
 //            val albumpair = arcAlbum.qualities.map { album ->
 //                Pair(IntToQuality(album.resolution), parseJson<MediaAlbum>(app.get("$pdUrl/api/list/${album.id}").text).files)
@@ -117,14 +127,30 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
     ): Boolean {
         //callback(ExtractorLink("", "", "", "", Qualities.P720.value))
         //val info = parseJson<JsonArcQuality>(data)
-
-        val mId = Regex("/u/(.*)").find(data)?.groupValues?.get(1)
+        val eData =  parseJson<EpisodeData>(data)
+        eData.resid.forEach{e ->
+            callback.invoke(ExtractorLink(
+                "PDcybar",
+                "PDcybar",
+                "https://pd.cybar.xyz/${e.second}",
+                "https://pd.cybar.xyz",
+                IntToQuality(e.first)
+            ))
+            callback.invoke(ExtractorLink(
+                "Pixeldrain",
+                "Pixeldrain",
+                "${eData.mainUrl}/u/${e.second}",
+                eData.mainUrl,
+                IntToQuality(e.first)
+            ))
+        }
+        //val mId = Regex("/u/(.*)").find(data)?.groupValues?.get(1)
         //if (apiId.isEmpty()) {
         //    return false
         //}
         //else {
-            loadExtractor("https://pd.cybar.xyz/${mId}", subtitleCallback, callback)
-            loadExtractor(data, subtitleCallback, callback)
+            //loadExtractor("https://pd.cybar.xyz/${mId}", subtitleCallback, callback)
+            //loadExtractor(data, subtitleCallback, callback)
             return true
         //}
     }
@@ -138,13 +164,15 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         }
     }
 
-    data class MultiId(
-        val resInt: Int,
-        val idList: MutableList<MediaFile>
+    data class EpisodeData(
+        val mainUrl: String,
+        val name: String?,
+        val resid: MutableList<Pair<Int, String>>
     )
 
+
     data class JsonData(
-        @JsonProperty("data") val arcs: Array<JsonArc>
+        @JsonProperty("data") val arcs: Array<DataArc>
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -160,24 +188,24 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         }
     }
 
-    data class JsonArc(
+    data class DataArc(
         @JsonProperty("slug") val slug: String,
         @JsonProperty("special") val special: Boolean,
         @JsonProperty("title") val title: String,
         @JsonProperty("description") val description: String,
-        @JsonProperty("pixeldrain") val album: Array<JsonArcAlbum>
+        @JsonProperty("pixeldrain") val variant: Array<DataArcVariant>?
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
 
-            other as JsonArc
+            other as DataArc
 
             if (slug != other.slug) return false
             if (special != other.special) return false
             if (title != other.title) return false
             if (description != other.description) return false
-            if (!album.contentEquals(other.album)) return false
+            if (!variant.contentEquals(other.variant)) return false
 
             return true
         }
@@ -187,22 +215,22 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
             result = 31 * result + special.hashCode()
             result = 31 * result + title.hashCode()
             result = 31 * result + description.hashCode()
-            result = 31 * result + album.contentHashCode()
+            result = 31 * result + variant.contentHashCode()
             return result
         }
     }
 
-    data class JsonArcAlbum(
+    data class DataArcVariant(
         @JsonProperty("sub") val sub: String,
         @JsonProperty("dub") val dub: String,
         @JsonProperty("variant") val variant: String,
-        @JsonProperty("items") val qualities: Array<JsonArcQuality>
+        @JsonProperty("items") val qualities: Array<DaraArcQuality>
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
 
-            other as JsonArcAlbum
+            other as DataArcVariant
 
             if (sub != other.sub) return false
             if (dub != other.dub) return false
@@ -221,7 +249,7 @@ class OnePaceTest : MainAPI() { // all providers must be an instance of MainAPI
         }
     }
 
-    data class JsonArcQuality(
+    data class DaraArcQuality(
         @JsonProperty("id") val id: String,
         @JsonProperty("resolution") val resolution: Int
     )
